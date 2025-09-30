@@ -1,11 +1,11 @@
 databases:
 - name: discourse-db
-  plan: standard
+  plan: hobby
 services:
 - type: web
   name: discourse-web
   env: docker
-  plan: standard
+  plan: hobby
   dockerfilePath: ./web/v2.6.3/Dockerfile
   dockerContext: ./web/v2.6.3
   autoDeploy: false
