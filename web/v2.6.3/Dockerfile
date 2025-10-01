@@ -32,7 +32,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # ----- Ruby gems (bundle) -----
-# (assumes you're in the cloned Discourse dir; if the Dockerfile later sets WORKDIR, that's fine)
+RUN gem install bundler -v "~> 2.3"
 RUN bundle config set path 'vendor/bundle' && bundle install
 
 # Foreman is commonly used to run Procfile web/worker
