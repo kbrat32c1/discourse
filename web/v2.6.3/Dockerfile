@@ -14,17 +14,20 @@ WORKDIR $DISCOURSE_ROOT
 
 RUN git clone https://github.com/discourse/discourse.git --branch $DISCOURSE_VERSION --single-branch $DISCOURSE_ROOT
 
-RUN apt-get update && apt-get install -y \
-    brotli \
-    gifsicle \
-    jhead \
-    jpegoptim \
-    nodejs \
-    npm \
-    optipng \
-    pngquant \
-    postgresql-client \
-    vim
+# --- system deps (updated) ---
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates curl gnupg dirmngr \
+      brotli gifsicle jhead jpegoptim optipng pngquant \
+      postgresql-client vim && \
+    rm -rf /var/lib/apt/lists/*
+
+# --- Node.js + yarn (modern install for Discourse asset build) ---
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    npm install -g yarn && \
+    rm -rf /var/lib/apt/lists/*
 RUN npm install -g svgo
 RUN bundle config set path vendor/bundle/ && bundle install
 RUN gem install foreman
