@@ -14,22 +14,28 @@ WORKDIR $DISCOURSE_ROOT
 
 RUN git clone https://github.com/discourse/discourse.git --branch $DISCOURSE_VERSION --single-branch $DISCOURSE_ROOT
 
-# --- system deps (updated) ---
+# ----- system + build deps (clean, current) -----
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates curl gnupg dirmngr \
+      build-essential git python3 make g++ \
+      imagemagick \
       brotli gifsicle jhead jpegoptim optipng pngquant \
       postgresql-client vim && \
     rm -rf /var/lib/apt/lists/*
 
-# --- Node.js + yarn (modern install for Discourse asset build) ---
+# ----- Node 18 + Yarn (use NodeSource) -----
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get update && \
     apt-get install -y --no-install-recommends nodejs && \
-    npm install -g yarn && \
+    npm install -g yarn svgo && \
     rm -rf /var/lib/apt/lists/*
-RUN npm install -g svgo
-RUN bundle config set path vendor/bundle/ && bundle install
+
+# ----- Ruby gems (bundle) -----
+# (assumes you're in the cloned Discourse dir; if the Dockerfile later sets WORKDIR, that's fine)
+RUN bundle config set path 'vendor/bundle' && bundle install
+
+# Foreman is commonly used to run Procfile web/worker
 RUN gem install foreman
 
 # Configure NGINX
