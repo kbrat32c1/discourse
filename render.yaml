@@ -1,65 +1,75 @@
 databases:
-- name: discourse-db
-  plan: free
+  - name: discourse-db
+    plan: free           # free Postgres is fine to start
+    diskSizeGB: 1        # required for free plan (1 GB fixed)
+    databaseName: discourse
+    user: discourse
+
 services:
-- type: web
-  name: discourse-web
-  env: docker
-  plan: starter
-  dockerfilePath: ./web/v2.6.3/Dockerfile
-  dockerContext: ./web/v2.6.3
-  autoDeploy: false
-  healthCheckPath: /srv/status
-  disk:
-    name: discourse-data
-    mountPath: /var/www/discourse/public/uploads
-    sizeGB: 12
-  envVars:
-  - key: DISCOURSE_ADMIN_EMAIL
-    sync: false # initial admin email for setup; set to your personal email
-  - key: DISCOURSE_ADMIN_PASSWORD
-    generateValue: true # auto-generated to ensure length > 15
-  - key: DISCOURSE_SMTP_ADDRESS
-    sync: false # set to a valid SMTP server address in the dashboard
-  - key: DISCOURSE_SMTP_PORT
-    sync: false # set to a valid SMTP port in the dashboard
-  - key: DISCOURSE_SMTP_DOMAIN
-    sync: false # set to the domain passed to the SMTP server in the dashboard
-  - key: DISCOURSE_SMTP_USER_NAME
-    sync: false # set to the SMTP username in the dashboard
-  - key: DISCOURSE_SMTP_PASSWORD
-    sync: false # set to the SMTP server password in the dashboard
-  - key: CUSTOM_DOMAIN
-    sync: false # set this if you plan to use your own domain
-  - key: DISCOURSE_MAXMIND_LICENSE_KEY
-    sync: false # set this if you have a GeoLite/GeoIP license key
-  - key: DISCOURSE_DB_HOST
-    fromDatabase:
-      name: discourse-db
-      property: host
-  - key: DISCOURSE_DB_PORT
-    fromDatabase:
-      name: discourse-db
-      property: port
-  - key: DISCOURSE_DB_USERNAME
-    fromDatabase:
-      name: discourse-db
-      property: user
-  - key: DISCOURSE_DB_PASSWORD
-    fromDatabase:
-      name: discourse-db
-      property: password
-  - key: DISCOURSE_DB_NAME
-    fromDatabase:
-      name: discourse-db
-      property: database
-  - key: DISCOURSE_REDIS_HOST
-    value: localhost
-  - key: DISCOURSE_REDIS_PORT
-    value: 6379
-  - key: PORT
-    value: 80 # Do not edit! Discourse exposes this internally
-  - key: DISCOURSE_WEB_CONCURRENCY
-    value: 1
-  - key: DISCOURSE_WORKER_CONCURRENCY
-    value: 1
+  - type: web
+    name: discourse-web
+    env: docker
+    plan: starter        # allows attaching a disk (free web cannot)
+    dockerfilePath: ./web/v2.6.3/Dockerfile
+    dockerContext: ./web/v2.6.3
+    autoDeploy: false
+    healthCheckPath: /srv/status
+
+    # Persistent uploads (so files don't vanish on redeploy)
+    disk:
+      name: discourse-data
+      mountPath: /var/www/discourse/public/uploads
+      sizeGB: 12
+
+    envVars:
+      # You will set these two in the Render dashboard (not in git)
+      - key: DISCOURSE_ADMIN_EMAIL
+        sync: false       # set to: kevin.bratland@gmail.com in the dashboard
+      - key: DISCOURSE_ADMIN_PASSWORD
+        generateValue: true
+
+      # SMTP (set all of these in the Render dashboard with your real provider)
+      - key: DISCOURSE_SMTP_ADDRESS
+        sync: false
+      - key: DISCOURSE_SMTP_PORT
+        sync: false
+      - key: DISCOURSE_SMTP_DOMAIN
+        sync: false
+      - key: DISCOURSE_SMTP_USER_NAME
+        sync: false
+      - key: DISCOURSE_SMTP_PASSWORD
+        sync: false
+
+      # Optional
+      - key: CUSTOM_DOMAIN
+        sync: false
+      - key: DISCOURSE_MAXMIND_LICENSE_KEY
+        sync: false
+
+      # Database wiring (auto from the DB above)
+      - key: DISCOURSE_DB_HOST
+        fromDatabase: { name: discourse-db, property: host }
+      - key: DISCOURSE_DB_PORT
+        fromDatabase: { name: discourse-db, property: port }
+      - key: DISCOURSE_DB_USERNAME
+        fromDatabase: { name: discourse-db, property: user }
+      - key: DISCOURSE_DB_PASSWORD
+        fromDatabase: { name: discourse-db, property: password }
+      - key: DISCOURSE_DB_NAME
+        fromDatabase: { name: discourse-db, property: database }
+
+      # Redis is local in this image layout; keep these as-is
+      - key: DISCOURSE_REDIS_HOST
+        value: localhost
+      - key: DISCOURSE_REDIS_PORT
+        value: "6379"
+
+      # Discourse expects PORT=80 internally
+      - key: PORT
+        value: "80"
+
+      # Tuning (leave small to start)
+      - key: DISCOURSE_WEB_CONCURRENCY
+        value: "1"
+      - key: DISCOURSE_WORKER_CONCURRENCY
+        value: "1"
