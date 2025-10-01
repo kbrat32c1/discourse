@@ -31,6 +31,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     npm install -g yarn svgo && \
     rm -rf /var/lib/apt/lists/*
 
+# (Optional if assets step complains)
+# RUN yarn install --frozen-lockfile
+
 # ----- Ruby gems (bundle) -----
 RUN gem install bundler -v "~> 2.3"
 RUN bundle config set path 'vendor/bundle' && bundle install
