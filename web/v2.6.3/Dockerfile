@@ -14,32 +14,37 @@ WORKDIR $DISCOURSE_ROOT
 
 RUN git clone https://github.com/discourse/discourse.git --branch $DISCOURSE_VERSION --single-branch $DISCOURSE_ROOT
 
-# ----- system + build deps (clean, current) -----
+# ----- system + build deps (full set for Discourse 2.6.x) -----
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates curl gnupg dirmngr \
       build-essential git python3 make g++ \
       imagemagick \
       brotli gifsicle jhead jpegoptim optipng pngquant \
-      postgresql-client vim && \
+      postgresql-client libpq-dev \
+      zlib1g-dev libssl-dev libyaml-dev libreadline-dev \
+      libxml2-dev libxslt1-dev libffi-dev libicu-dev file \
+      pkg-config && \
     rm -rf /var/lib/apt/lists/*
 
-# ----- Node 18 + Yarn (use NodeSource) -----
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+# ----- Node 16 LTS + yarn (safer for Discourse v2.6.x) -----
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
     apt-get update && \
     apt-get install -y --no-install-recommends nodejs && \
     npm install -g yarn svgo && \
     rm -rf /var/lib/apt/lists/*
 
-# (Optional if assets step complains)
-# RUN yarn install --frozen-lockfile
+# JS deps for asset build (run inside the Discourse app dir)
+RUN yarn install --frozen-lockfile
 
 # ----- Ruby gems (bundle) -----
+# Compatible bundler for Ruby 2.7 / Discourse 2.6
 RUN gem install bundler -v "~> 2.3"
-RUN bundle config set path 'vendor/bundle' && bundle install
-
-# Foreman is commonly used to run Procfile web/worker
-RUN gem install foreman
+# Install only production groups; vendored path for repeatable builds
+RUN bundle config set path 'vendor/bundle' && \
+    bundle config set deployment 'true' && \
+    bundle config set without 'development test' && \
+    bundle install --jobs 4 --retry 3
 
 # Configure NGINX
 COPY install-nginx.sh /tmp/install-nginx.sh
